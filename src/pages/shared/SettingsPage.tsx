@@ -1,11 +1,14 @@
-import { User, Bell, Shield, Palette, Camera } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Bell, Shield, Palette, Camera, Loader2, Check } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Avatar } from "@/components/ui/Avatar";
+import { AvatarCropModal } from "@/components/ui/AvatarCropModal";
 import { useAppStore } from "@/store/appStore";
+import { useUpdateUser } from "@/hooks";
 import { ROLE_LABELS } from "@/constants";
 import { cn } from "@/utils";
 import type { Theme } from "@/types";
@@ -31,7 +34,39 @@ const securityItems = [
 ];
 
 export function SettingsPage() {
-  const { currentUser, theme, setTheme } = useAppStore();
+  const { user: currentUser, theme, setTheme, loadMe } = useAppStore();
+  const { mutate: updateUser, isPending } = useUpdateUser();
+  const [profileForm, setProfileForm] = useState({
+    name: currentUser?.name ?? '',
+    email: currentUser?.email ?? '',
+    title: currentUser?.title ?? '',
+    department: currentUser?.department ?? '',
+  });
+  const [saved, setSaved] = useState(false);
+  const [cropOpen, setCropOpen] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    setProfileForm({
+      name: currentUser.name ?? '',
+      email: currentUser.email ?? '',
+      title: currentUser.title ?? '',
+      department: currentUser.department ?? '',
+    });
+  }, [currentUser?.id]);
+
+  function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentUser) return;
+    updateUser({ id: currentUser.id, data: profileForm }, {
+      onSuccess: (updatedUser) => {
+        useAppStore.setState(s => ({ ...s, user: { ...s.user!, ...updatedUser } }));
+        loadMe();
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      },
+    });
+  }
 
   return (
     <div className="space-y-6 max-w-3xl w-full">
@@ -59,12 +94,22 @@ export function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent>
+              <AvatarCropModal
+                open={cropOpen}
+                onClose={() => setCropOpen(false)}
+                userId={currentUser.id}
+                onUploaded={(url) => {
+                  useAppStore.setState(s => ({ ...s, user: s.user ? { ...s.user, avatar: url } : s.user }));
+                  loadMe();
+                }}
+              />
+
               <div className="flex items-center gap-5 mb-8 pb-8 border-b border-border">
-                <div className="relative">
-                  <Avatar name={currentUser.name} size="xl" />
-                  <button className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500 transition-colors">
-                    <Camera className="size-3" />
-                  </button>
+                <div className="relative group cursor-pointer" onClick={() => setCropOpen(true)}>
+                  <Avatar name={currentUser.name} src={currentUser.avatar ?? undefined} size="xl" />
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="size-5 text-white" />
+                  </div>
                 </div>
                 <div>
                   <p className="text-[15px] font-semibold text-foreground">{currentUser.name}</p>
@@ -73,15 +118,20 @@ export function SettingsPage() {
                 </div>
               </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Full Name" defaultValue={currentUser.name} />
-                <Input label="Email" defaultValue={currentUser.email} type="email" />
-                <Input label="Job Title" defaultValue={currentUser.title} />
-                <Input label="Department" defaultValue={currentUser.department} />
-              </div>
-              <div className="flex justify-end mt-6">
-                <Button>Save Changes</Button>
-              </div>
+              <form onSubmit={handleSaveProfile}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Full Name" value={profileForm.name} onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))} />
+                  <Input label="Email" value={profileForm.email} onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))} type="email" />
+                  <Input label="Job Title" value={profileForm.title} onChange={e => setProfileForm(p => ({ ...p, title: e.target.value }))} />
+                  <Input label="Department" value={profileForm.department} onChange={e => setProfileForm(p => ({ ...p, department: e.target.value }))} />
+                </div>
+                <div className="flex justify-end mt-6">
+                  <Button type="submit" disabled={isPending} className="flex items-center gap-2">
+                    {isPending ? <Loader2 className="size-4 animate-spin" /> : saved ? <Check className="size-4" /> : null}
+                    {saved ? 'Saved!' : 'Save Changes'}
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>

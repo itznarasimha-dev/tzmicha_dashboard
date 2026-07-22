@@ -11,8 +11,12 @@ import { Button } from "@/components/ui/Button";
 import { BarChartComponent } from "@/components/charts/Charts";
 import { mockBugs, mockTestCases } from "@/data/projects";
 import { bugTrendData } from "@/data/analytics";
-import { SEVERITY_COLORS } from "@/constants";
+import { useTasks } from "@/hooks";
+import { TASK_STATUS_COLORS, PRIORITY_COLORS, SEVERITY_COLORS } from "@/constants";
 import { cn, formatRelativeTime } from "@/utils";
+import { UpcomingEventsCard } from "@/components/ui/UpcomingEventsCard";
+import { TodayEventBanner } from "@/components/ui/TodayEventBanner";
+import { useTodayHoliday } from "@/hooks";
 import type { KPICard as KPICardType } from "@/types";
 
 const kpiCards: KPICardType[] = [
@@ -48,6 +52,9 @@ const checklist = [
 ];
 
 export function QADashboard() {
+  const { data: tasksData } = useTasks({ limit: 50 });
+  const allTasks = tasksData?.data ?? [];
+  const overdueTasks = allTasks.filter((t: any) => t.status === 'overdue' || t.isOverdue);
   const openBugs = mockBugs.filter((b) => b.status === "open" || b.status === "in-progress");
   const doneCount = checklist.filter((c) => c.done).length;
 
@@ -68,6 +75,7 @@ export function QADashboard() {
           <h1 className="text-[1.75rem] font-bold text-foreground tracking-tight leading-tight">QA Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Sprint 12 release readiness · {doneCount}/{checklist.length} checks passed
+            {overdueTasks.length > 0 && <> · <span className="text-red-500 font-semibold">{overdueTasks.length} overdue</span></>}
           </p>
         </div>
         <Button size="md">
@@ -75,12 +83,18 @@ export function QADashboard() {
         </Button>
       </motion.div>
 
+      {/* Today's Holiday / Company Event Banner */}
+      <TodayEventBanner />
+
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {kpiCards.map((card, i) => (
           <KPICard key={card.id} card={card} icon={kpiIcons[i]} index={i} />
         ))}
       </div>
+
+      {/* Upcoming Events — synced from Calendar */}
+      <UpcomingEventsCard />
 
       {/* Release Readiness */}
       <Card padding="lg">

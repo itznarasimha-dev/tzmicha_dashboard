@@ -16,7 +16,7 @@ const commands = [
   { id: "employees", label: "Employees", icon: <Users className="size-4" />, path: "/employees", group: "Navigation" },
   { id: "projects", label: "Projects", icon: <FolderKanban className="size-4" />, path: "/projects", group: "Navigation" },
   { id: "sprint", label: "Sprint Board", icon: <Layers className="size-4" />, path: "/sprint", group: "Navigation" },
-  { id: "qa", label: "QA & Testing", icon: <Bug className="size-4" />, path: "/qa", group: "Navigation" },
+  { id: "tasks", label: "Tasks", icon: <Bug className="size-4" />, path: "/tasks", group: "Navigation" },
   { id: "work-updates", label: "Work Updates", icon: <ClipboardList className="size-4" />, path: "/work-updates", group: "Navigation" },
   { id: "settings", label: "Settings", icon: <Settings className="size-4" />, path: "/settings", group: "Navigation" },
 ];

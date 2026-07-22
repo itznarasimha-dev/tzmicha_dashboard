@@ -4,7 +4,7 @@ import { cn } from "@/utils";
 
 interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
   value: number;
-  color?: "blue" | "violet" | "emerald" | "amber" | "red" | "rose";
+  color?: "blue" | "violet" | "emerald" | "amber" | "red" | "cyan" | "purple";
   size?: "xs" | "sm" | "md" | "lg";
   showLabel?: boolean;
   label?: string;
@@ -12,12 +12,13 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
 }
 
 const colorMap = {
-  blue: "bg-indigo-500",
-  violet: "bg-violet-500",
-  emerald: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-  rose: "bg-rose-500",
+  blue:    "bg-[#4F7CFF]",
+  violet:  "bg-[#7B61FF]",
+  emerald: "bg-[#16C47F]",
+  amber:   "bg-[#F59E0B]",
+  red:     "bg-[#EF4444]",
+  cyan:    "bg-[#22C7E8]",
+  purple:  "bg-[#8B5CF6]",
 };
 
 const sizeMap = {
@@ -27,39 +28,22 @@ const sizeMap = {
   lg: "h-2.5",
 };
 
-export function Progress({
-  value,
-  color = "rose",
-  size = "sm",
-  showLabel,
-  label,
-  animated = true,
-  className,
-  ...props
-}: ProgressProps) {
+export function Progress({ value, color = "blue", size = "sm", showLabel, label, animated = true, className, ...props }: ProgressProps) {
   return (
     <div className="flex flex-col gap-1.5">
       {(showLabel || label) && (
         <div className="flex items-center justify-between">
-          {label && <span className="text-xs text-muted-foreground">{label}</span>}
-          {showLabel && <span className="text-xs font-bold text-foreground">{value}%</span>}
+          {label && <span className="text-xs text-[#64748B]">{label}</span>}
+          {showLabel && <span className="text-xs font-bold text-[#334155]">{value}%</span>}
         </div>
       )}
       <ProgressPrimitive.Root
-        className={cn(
-          "relative overflow-hidden rounded-full bg-muted/70",
-          sizeMap[size],
-          className
-        )}
+        className={cn("relative overflow-hidden rounded-full bg-[#F1F5F9]", sizeMap[size], className)}
         value={value}
         {...props}
       >
         <ProgressPrimitive.Indicator
-          className={cn(
-            "h-full rounded-full",
-            colorMap[color],
-            animated && "transition-all duration-700 ease-out"
-          )}
+          className={cn("h-full rounded-full", colorMap[color], animated && "transition-all duration-700 ease-out")}
           style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
         />
       </ProgressPrimitive.Root>

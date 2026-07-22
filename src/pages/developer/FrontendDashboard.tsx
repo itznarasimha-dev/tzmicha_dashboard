@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { BarChartComponent } from "@/components/charts/Charts";
-import { mockTasks, mockBugs } from "@/data/projects";
+import { UpcomingEventsCard } from "@/components/ui/UpcomingEventsCard";
+import { TodayEventBanner } from "@/components/ui/TodayEventBanner";
+import { useTasks } from "@/hooks";
 import { TASK_STATUS_COLORS, PRIORITY_COLORS } from "@/constants";
 import { cn, formatRelativeTime } from "@/utils";
 import type { KPICard as KPICardType } from "@/types";
@@ -56,8 +58,11 @@ const statusText: Record<string, string> = {
 };
 
 export function FrontendDashboard() {
-  const myTasks = mockTasks.filter((t) => t.assignee?.id === "u2");
-  const myBugs = mockBugs.filter((b) => b.assignee?.id === "u2");
+  const { data: tasksData } = useTasks({ limit: 50 });
+  const allTasks = tasksData?.data ?? [];
+  const myTasks = allTasks.filter((t: any) => t.status !== 'done');
+  const overdueTasks = allTasks.filter((t: any) => t.status === 'overdue' || t.isOverdue);
+  const myBugs: any[] = [];
 
   return (
     <div className="space-y-6">
@@ -77,12 +82,17 @@ export function FrontendDashboard() {
             </span>
           </div>
           <h1 className="text-[1.75rem] font-bold text-foreground tracking-tight leading-tight">My Workspace</h1>
-          <p className="text-sm text-muted-foreground mt-1">Feb 19 – Mar 1 · 8 tasks assigned · 2 bugs open</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {myTasks.length} tasks assigned · {overdueTasks.length > 0 ? <span className="text-red-500 font-semibold">{overdueTasks.length} overdue</span> : '0 overdue'}
+          </p>
         </div>
         <Button size="md">
           <Plus className="size-4" strokeWidth={2.5} /> New Task
         </Button>
       </motion.div>
+
+      {/* Today's Holiday / Company Event Banner */}
+      <TodayEventBanner />
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -90,6 +100,9 @@ export function FrontendDashboard() {
           <KPICard key={card.id} card={card} icon={kpiIcons[i]} index={i} />
         ))}
       </div>
+
+      {/* Upcoming Events — synced from Calendar */}
+      <UpcomingEventsCard />
 
       {/* Tasks + Performance */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -99,7 +112,7 @@ export function FrontendDashboard() {
               <CardTitle>My Tasks — Sprint 12</CardTitle>
               <CardDescription>{myTasks.length} tasks assigned to you</CardDescription>
             </div>
-            <Link to="/tasks">
+            <Link to="/sprint">
               <Button variant="ghost" size="icon-xs"><ArrowRight className="size-3.5" /></Button>
             </Link>
           </CardHeader>
@@ -111,18 +124,26 @@ export function FrontendDashboard() {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-border-strong hover:bg-muted/30 transition-all duration-150 cursor-pointer group"
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/30 transition-all duration-150 cursor-pointer group',
+                    (task.status === 'overdue' || task.isOverdue)
+                      ? 'border-red-400 dark:border-red-700 bg-red-500/5'
+                      : 'border-border hover:border-border-strong'
+                  )}
                 >
                   <div className={cn("size-2 rounded-full shrink-0", {
                     "bg-emerald-500": task.status === "done",
-                    "bg-amber-500": task.status === "in-progress",
-                    "bg-violet-500": task.status === "in-review",
+                    "bg-amber-500": task.status === "in_progress" || task.status === "in-progress",
+                    "bg-violet-500": task.status === "in_review" || task.status === "in-review",
                     "bg-blue-500": task.status === "todo",
-                    "bg-red-500": task.status === "blocked",
+                    "bg-red-500": task.status === "blocked" || task.status === "overdue",
                     "bg-muted-foreground/40": task.status === "backlog",
                   })} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-foreground truncate group-hover:text-indigo-600 transition-colors">{task.title}</p>
+                    <p className={cn('text-[13px] font-medium truncate group-hover:text-indigo-600 transition-colors',
+                      (task.status === 'overdue' || task.isOverdue) ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+                      {task.title}
+                    </p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {task.labels.map((l) => (
                         <span key={l} className="text-2xs text-muted-foreground bg-muted rounded px-1.5 py-0.5">{l}</span>
@@ -130,8 +151,8 @@ export function FrontendDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge className={cn("text-2xs", TASK_STATUS_COLORS[task.status])}>
-                      {task.status.replace("-", " ")}
+                    <Badge className={cn("text-2xs", TASK_STATUS_COLORS[task.status] ?? '')}>
+                      {task.status?.replace(/_/g, ' ')}
                     </Badge>
                     <span className={cn("text-xs font-semibold", PRIORITY_COLORS[task.priority])}>
                       {task.priority}

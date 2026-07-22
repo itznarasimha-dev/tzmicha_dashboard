@@ -16,8 +16,8 @@ export function formatRelativeTime(date: string | Date) {
   return formatDistanceToNow(d, { addSuffix: true });
 }
 
-export function formatCurrency(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+export function formatCurrency(amount: number, currency = "INR") {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
 }
 
 export function formatNumber(n: number) {

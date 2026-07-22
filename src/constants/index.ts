@@ -3,75 +3,90 @@ import type { UserRole } from "@/types";
 export const APP_NAME = "TZMicha";
 export const APP_VERSION = "1.0.0";
 
-export const ROLE_LABELS: Record<UserRole, string> = {
+// Supports both hyphen (frontend type) and underscore (DB/backend) formats
+export const ROLE_LABELS: Record<string, string> = {
   admin: "Administrator",
   "frontend-dev": "Frontend Developer",
+  frontend_dev: "Frontend Developer",
   "backend-dev": "Backend Developer",
+  backend_dev: "Backend Developer",
   qa: "QA Engineer",
   marketing: "Marketing",
   hr: "Human Resources",
   "product-manager": "Product Manager",
+  product_manager: "Product Manager",
   sales: "Sales & CS",
+  finance: "Finance",
 };
 
-export const ROLE_COLORS: Record<UserRole, string> = {
-  admin: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  "frontend-dev": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  "backend-dev": "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-  qa: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  marketing: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
-  hr: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  "product-manager": "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
-  sales: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+export const ROLE_COLORS: Record<string, string> = {
+  admin:            "bg-[#E6F7F7] text-[#0EA5A4]",
+  "frontend-dev":   "bg-[#CCFBF1] text-[#0F766E]",
+  frontend_dev:     "bg-[#CCFBF1] text-[#0F766E]",
+  "backend-dev":    "bg-[#F0FDFA] text-[#0D9488]",
+  backend_dev:      "bg-[#F0FDFA] text-[#0D9488]",
+  qa:               "bg-[#FFFBEB] text-[#D97706]",
+  marketing:        "bg-[#ECFEFF] text-[#0891B2]",
+  hr:               "bg-[#DCFCE7] text-[#16A34A]",
+  "product-manager":"bg-[#E6F7F7] text-[#0EA5A4]",
+  product_manager:  "bg-[#E6F7F7] text-[#0EA5A4]",
+  sales:            "bg-[#FFF7ED] text-[#EA580C]",
+  finance:          "bg-[#DCFCE7] text-[#059669]",
 };
 
-export const TASK_STATUS_LABELS = {
+export const TASK_STATUS_LABELS: Record<string, string> = {
   backlog: "Backlog",
   todo: "To Do",
+  in_progress: "In Progress",
   "in-progress": "In Progress",
+  in_review: "In Review",
   "in-review": "In Review",
   done: "Done",
   blocked: "Blocked",
+  overdue: "Overdue",
 };
 
-export const TASK_STATUS_COLORS = {
-  backlog: "bg-muted text-muted-foreground",
-  todo: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  "in-progress": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  "in-review": "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-  done: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  blocked: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+export const TASK_STATUS_COLORS: Record<string, string> = {
+  backlog:      "bg-[#F1F5F9] text-[#64748B]",
+  todo:         "bg-[#E6F7F7] text-[#0EA5A4]",
+  in_progress:  "bg-[#FFFBEB] text-[#D97706]",
+  "in-progress":"bg-[#FFFBEB] text-[#D97706]",
+  in_review:    "bg-[#CCFBF1] text-[#0F766E]",
+  "in-review":  "bg-[#CCFBF1] text-[#0F766E]",
+  done:         "bg-[#DCFCE7] text-[#16A34A]",
+  blocked:      "bg-[#FEF2F2] text-[#EF4444]",
+  overdue:      "bg-[#FEF2F2] text-[#DC2626]",
 };
 
 export const PRIORITY_COLORS = {
-  critical: "text-red-600 dark:text-red-400",
-  high: "text-orange-600 dark:text-orange-400",
-  medium: "text-amber-600 dark:text-amber-400",
-  low: "text-emerald-600 dark:text-emerald-400",
+  critical: "text-[#EF4444]",
+  high:     "text-[#F59E0B]",
+  medium:   "text-[#4F7CFF]",
+  low:      "text-[#16C47F]",
 };
 
 export const SEVERITY_COLORS = {
-  critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  high: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  low: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  critical: "bg-[#FEF2F2] text-[#EF4444]",
+  high:     "bg-[#FFFBEB] text-[#D97706]",
+  medium:   "bg-[#E6F7F7] text-[#0EA5A4]",
+  low:      "bg-[#DCFCE7] text-[#16A34A]",
 };
 
 export const CHART_COLORS = {
-  primary: "hsl(243, 75%, 59%)",
-  secondary: "hsl(258, 90%, 66%)",
-  success: "hsl(152, 69%, 36%)",
-  warning: "hsl(35, 95%, 50%)",
-  danger: "hsl(4, 86%, 58%)",
-  muted: "hsl(220, 9%, 46%)",
-  blue: "#6366f1",
-  violet: "#8b5cf6",
-  emerald: "#10b981",
-  amber: "#f59e0b",
-  red: "#ef4444",
-  pink: "#ec4899",
-  cyan: "#06b6d4",
-  orange: "#f97316",
+  primary:   "#0EA5A4",
+  secondary: "#14B8A6",
+  success:   "#22C55E",
+  warning:   "#F59E0B",
+  danger:    "#EF4444",
+  cyan:      "#06B6D4",
+  purple:    "#8B5CF6",
+  blue:      "#3B82F6",
+  indigo:    "#6366F1",
+  emerald:   "#10B981",
+  amber:     "#F59E0B",
+  red:       "#EF4444",
+  pink:      "#EC4899",
+  orange:    "#F97316",
 };
 
 export const SIDEBAR_WIDTH = 260;

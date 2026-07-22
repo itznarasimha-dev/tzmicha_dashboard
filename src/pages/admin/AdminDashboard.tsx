@@ -1,5 +1,5 @@
 import {
-  Users, TrendingUp, Zap, Bug, Plus, ArrowRight,
+  Users, TrendingUp, Zap, Bug, Plus, ArrowRight, CheckCircle2, Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
 import { Avatar } from "@/components/ui/Avatar";
 import { AreaChartComponent, DonutChart, BarChartComponent } from "@/components/charts/Charts";
-import { mockActivity, trafficData, channelData, teamProductivityData } from "@/data/analytics";
-import { mockProjects } from "@/data/projects";
-import { mockUsers } from "@/data/users";
-import { formatDate } from "@/utils";
+import { trafficData, channelData, teamProductivityData } from "@/data/analytics";
+import { formatDate, cn } from "@/utils";
 import { useAppStore } from "@/store/appStore";
+import { useProjects, useActivity, useUsers, useExtensionRequests, useReviewExtension, useTasks, useApproveTask } from "@/hooks";
+import { UpcomingEventsCard } from "@/components/ui/UpcomingEventsCard";
+import { TodayEventBanner } from "@/components/ui/TodayEventBanner";
 import type { KPICard as KPICardType } from "@/types";
 
 const kpiCards: KPICardType[] = [
@@ -40,7 +41,23 @@ function getGreeting() {
 }
 
 export function AdminDashboard() {
-  const { currentUser } = useAppStore();
+  const currentUser = useAppStore(s => s.user);
+  const { data: projectsData } = useProjects({ limit: 10 });
+  const { data: activityData } = useActivity({ limit: 6 });
+  const { data: usersData } = useUsers({ limit: 20 });
+  const { data: extensionsData } = useExtensionRequests({ status: 'pending' });
+  const { mutate: reviewExtension } = useReviewExtension();
+  const { data: inReviewData } = useTasks({ status: 'in_review', limit: 20 });
+  const { mutate: approveTask } = useApproveTask();
+  const inReviewTasks = inReviewData?.data ?? [];
+  const pendingExtensions = extensionsData?.data ?? [];
+  const mockProjects = projectsData?.data ?? [];
+  const mockActivity = activityData?.data?.map((a: any) => ({
+    id: a.id, user: { id: a.userId, name: a.user?.name, avatar: a.user?.avatar, role: a.user?.role },
+    action: a.action, target: a.target, timestamp: a.createdAt, type: a.type,
+  })) ?? [];
+  const mockUsers = usersData?.data ?? [];
+  if (!currentUser) return null;
 
   return (
     <div className="space-y-6">
@@ -78,6 +95,92 @@ export function AdminDashboard() {
           <KPICard key={card.id} card={card} icon={kpiIcons[i]} index={i} />
         ))}
       </div>
+
+      {/* Today's Holiday / Company Event Banner */}
+      <TodayEventBanner />
+
+      {/* Deadline Extension Requests */}
+      {pendingExtensions.length > 0 && (
+        <Card padding="lg">
+          <CardHeader>
+            <div>
+              <CardTitle>Deadline Extension Requests</CardTitle>
+              <CardDescription>{pendingExtensions.length} pending review</CardDescription>
+            </div>
+            <Badge variant="warning" dot>Needs Action</Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {pendingExtensions.map((req: any) => (
+                <div key={req.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border border-amber-200 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-foreground">{req.task?.title ?? 'Task'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Requested by <span className="font-medium text-foreground">{req.requestedBy?.name ?? 'Employee'}</span> · New date: <span className="font-medium text-foreground">{formatDate(req.requestedDueDate)}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 italic">"{req.reason}"</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => reviewExtension({ id: req.id, action: 'approved' })}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors">
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => reviewExtension({ id: req.id, action: 'rejected' })}
+                      className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition-colors">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tasks Awaiting Admin Review */}
+      {inReviewTasks.length > 0 && (
+        <Card padding="lg">
+          <CardHeader>
+            <div>
+              <CardTitle>Tasks Awaiting Review</CardTitle>
+              <CardDescription>{inReviewTasks.length} task{inReviewTasks.length > 1 ? 's' : ''} submitted for approval</CardDescription>
+            </div>
+            <Badge variant="violet" dot>Needs Approval</Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {inReviewTasks.map((task: any) => (
+                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border border-violet-200 dark:border-violet-900/30 bg-violet-50/50 dark:bg-violet-950/10">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    {task.assignee && <Avatar name={task.assignee.name} src={task.assignee.avatar} size="sm" />}
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-foreground truncate">{task.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {task.assignee?.name ?? 'Unknown'} · {task.project?.name ?? ''}
+                        {task.dueDate && <> · Due {formatDate(task.dueDate)}</>}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => approveTask(task.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors">
+                      <CheckCircle2 className="size-3.5" /> Approve
+                    </button>
+                    <Link to="/sprint">
+                      <button className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs font-medium text-foreground transition-colors">
+                        View
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Analytics Row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -195,21 +298,25 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Activity Feed — full width */}
-      <Card padding="lg">
-        <CardHeader>
-          <div>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Across all teams</CardDescription>
-          </div>
-          <Link to="/activity">
-            <Button variant="ghost" size="icon-xs"><ArrowRight className="size-4" /></Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <ActivityFeed items={mockActivity} maxItems={6} />
-        </CardContent>
-      </Card>
+      {/* Upcoming Events + Activity Feed */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Card padding="lg" className="xl:col-span-2">
+          <CardHeader>
+            <div>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Across all teams</CardDescription>
+            </div>
+            <Link to="/activity">
+              <Button variant="ghost" size="icon-xs"><ArrowRight className="size-4" /></Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <ActivityFeed items={mockActivity} maxItems={6} />
+          </CardContent>
+        </Card>
+
+          <UpcomingEventsCard />
+      </div>
 
       {/* Team Overview */}
       <Card padding="lg">

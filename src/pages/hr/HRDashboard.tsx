@@ -10,17 +10,12 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { BarChartComponent } from "@/components/charts/Charts";
-import { mockLeaveRequests, mockEmployees } from "@/data/users";
+import { UpcomingEventsCard } from "@/components/ui/UpcomingEventsCard";
+import { TodayEventBanner } from "@/components/ui/TodayEventBanner";
+import { useLeaveRequests, useUsers, useUpdateLeaveStatus } from "@/hooks";
 import { ROLE_LABELS, ROLE_COLORS } from "@/constants";
 import { cn, formatDate } from "@/utils";
 import type { KPICard as KPICardType } from "@/types";
-
-const kpiCards: KPICardType[] = [
-  { id: "k1", title: "Total Employees", value: 48, change: 4, changeLabel: "this quarter", trend: "up", icon: "employees", color: "blue", sparkline: [40, 42, 43, 44, 46, 48] },
-  { id: "k2", title: "On Leave Today", value: 3, change: 0, changeLabel: "no change", trend: "neutral", icon: "leave", color: "amber" },
-  { id: "k3", title: "Pending Requests", value: 5, change: 2, changeLabel: "new today", trend: "up", icon: "pending", color: "violet" },
-  { id: "k4", title: "Onboarding", value: 2, change: 0, changeLabel: "in progress", trend: "neutral", icon: "onboarding", color: "emerald" },
-];
 
 const kpiIcons = [
   <Users className="size-5" />,
@@ -29,17 +24,29 @@ const kpiIcons = [
   <UserCheck className="size-5" />,
 ];
 
-const deptData = [
-  { label: "Engineering", value: 18 },
-  { label: "Marketing", value: 8 },
-  { label: "Sales", value: 10 },
-  { label: "HR", value: 4 },
-  { label: "Product", value: 5 },
-  { label: "Operations", value: 3 },
-];
-
 export function HRDashboard() {
-  const pendingLeave = mockLeaveRequests.filter((r) => r.status === "pending");
+  const { data: leaveData } = useLeaveRequests({ limit: 20 });
+  const { data: usersData } = useUsers({ limit: 100 });
+  const { mutate: updateLeaveStatus } = useUpdateLeaveStatus();
+  const leaveRequests = leaveData?.data ?? [];
+  const employees = usersData?.data ?? [];
+  const pendingLeave = leaveRequests.filter((r: any) => r.status === 'pending');
+  const onLeaveToday = leaveRequests.filter((r: any) => {
+    const today = new Date();
+    return r.status === 'approved' && new Date(r.startDate) <= today && new Date(r.endDate) >= today;
+  });
+
+  // Dept distribution from real users
+  const deptMap: Record<string, number> = {};
+  employees.forEach((e: any) => { if (e.department) deptMap[e.department] = (deptMap[e.department] ?? 0) + 1; });
+  const deptData = Object.entries(deptMap).map(([label, value]) => ({ label, value }));
+
+  const kpiCards: KPICardType[] = [
+    { id: 'k1', title: 'Total Employees', value: employees.length, change: 0, changeLabel: 'active', trend: 'neutral', icon: 'employees', color: 'blue' },
+    { id: 'k2', title: 'On Leave Today', value: onLeaveToday.length, change: 0, changeLabel: 'approved', trend: 'neutral', icon: 'leave', color: 'amber' },
+    { id: 'k3', title: 'Pending Requests', value: pendingLeave.length, change: 0, changeLabel: 'awaiting approval', trend: pendingLeave.length > 0 ? 'up' : 'neutral', icon: 'pending', color: 'violet' },
+    { id: 'k4', title: 'Departments', value: deptData.length, change: 0, changeLabel: 'teams', trend: 'neutral', icon: 'onboarding', color: 'emerald' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -58,12 +65,15 @@ export function HRDashboard() {
             </span>
           </div>
           <h1 className="text-[1.75rem] font-bold text-foreground tracking-tight leading-tight">HR Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">48 employees · 5 pending requests · 2 onboarding</p>
+          <p className="text-sm text-muted-foreground mt-1">{employees.length} employees · {pendingLeave.length} pending requests · {onLeaveToday.length} on leave today</p>
         </div>
         <Button size="md">
           <Plus className="size-4" strokeWidth={2.5} /> Add Employee
         </Button>
       </motion.div>
+
+      {/* Today's Holiday / Company Event Banner */}
+      <TodayEventBanner />
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -86,7 +96,7 @@ export function HRDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {mockLeaveRequests.map((req, i) => (
+              {leaveRequests.map((req, i) => (
                 <motion.div
                   key={req.id}
                   initial={{ opacity: 0, y: 4 }}
@@ -94,9 +104,9 @@ export function HRDashboard() {
                   transition={{ delay: i * 0.05 }}
                   className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-border-strong transition-all duration-150"
                 >
-                  <Avatar name={req.employeeName} size="sm" />
+                  <Avatar name={req.user?.name ?? req.employeeName ?? 'User'} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">{req.employeeName}</p>
+                    <p className="text-[13px] font-semibold text-foreground">{req.user?.name ?? req.employeeName}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       <span className="capitalize">{req.type}</span> leave · {formatDate(req.startDate)} – {formatDate(req.endDate)} · {req.days} days
                     </p>
@@ -109,10 +119,12 @@ export function HRDashboard() {
                   </Badge>
                   {req.status === "pending" && (
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button size="icon-xs" variant="ghost" className="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                      <Button size="icon-xs" variant="ghost" className="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                        onClick={() => updateLeaveStatus({ id: req.id, status: 'approved' })}>
                         <CheckCircle2 className="size-4" />
                       </Button>
-                      <Button size="icon-xs" variant="ghost" className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                      <Button size="icon-xs" variant="ghost" className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => updateLeaveStatus({ id: req.id, status: 'rejected' })}>
                         <XCircle className="size-4" />
                       </Button>
                     </div>
@@ -141,6 +153,9 @@ export function HRDashboard() {
         </Card>
       </div>
 
+      {/* Upcoming Events — synced from Calendar */}
+      <UpcomingEventsCard />
+
       {/* Employee Directory */}
       <Card padding="lg">
         <CardHeader>
@@ -154,7 +169,7 @@ export function HRDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-1.5">
-            {mockEmployees.slice(0, 6).map((emp, i) => (
+            {employees.slice(0, 6).map((emp, i) => (
               <motion.div
                 key={emp.id}
                 initial={{ opacity: 0, x: -4 }}

@@ -8,7 +8,8 @@ export type UserRole =
   | "marketing"
   | "hr"
   | "product-manager"
-  | "sales";
+  | "sales"
+  | "finance";
 
 export type PermissionTier = "view" | "edit" | "approve" | "admin";
 
@@ -79,7 +80,7 @@ export interface ActivityItem {
 
 // ─── Project & Task Types ─────────────────────────────────────────────────────
 
-export type TaskStatus = "backlog" | "todo" | "in-progress" | "in-review" | "done" | "blocked";
+export type TaskStatus = "backlog" | "todo" | "in-progress" | "in-review" | "done" | "blocked" | "overdue";
 export type TaskPriority = "critical" | "high" | "medium" | "low";
 
 export interface Task {
@@ -90,15 +91,38 @@ export interface Task {
   priority: TaskPriority;
   assignee?: Pick<User, "id" | "name" | "avatar">;
   reporter: Pick<User, "id" | "name" | "avatar">;
+  assignedById?: string;
+  assignedDate?: string;
   projectId: string;
+  project?: Pick<Project, "id" | "name" | "color">;
   sprintId?: string;
   labels: string[];
   dueDate?: string;
-  createdAt: string;
-  updatedAt: string;
   estimatedHours?: number;
   loggedHours?: number;
+  notes?: string;
   linkedPR?: string;
+  isOverdue?: boolean;
+  daysRemaining?: number | null;
+  extensionRequests?: DeadlineExtensionRequest[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ExtensionStatus = "pending" | "approved" | "rejected";
+
+export interface DeadlineExtensionRequest {
+  id: string;
+  taskId: string;
+  requestedById: string;
+  reason: string;
+  requestedDueDate: string;
+  comments?: string;
+  status: ExtensionStatus;
+  reviewedById?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  task?: Pick<Task, "id" | "title" | "dueDate"> & { assignee?: Pick<User, "id" | "name" | "avatar"> };
 }
 
 export interface Project {
@@ -260,3 +284,215 @@ export interface ChartDataPoint {
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 export type Theme = "light" | "dark" | "system";
+
+// ─── Recruitment Types ────────────────────────────────────────────────────────
+
+export type JobStatus = "open" | "closed" | "on_hold";
+export type CandidateStatus =
+  | "applied"
+  | "screening"
+  | "technical_interview"
+  | "hr_interview"
+  | "selected"
+  | "rejected";
+export type InterviewStatus = "scheduled" | "completed" | "cancelled" | "no_show";
+
+export interface JobOpening {
+  id: string;
+  title: string;
+  department: string;
+  description?: string;
+  requirements?: string;
+  location?: string;
+  type: string;
+  status: JobStatus;
+  createdById: string;
+  createdAt: string;
+  _count?: { candidates: number };
+}
+
+export type CandidateGender = 'male' | 'female' | 'other';
+
+export interface Candidate {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  experience: number;
+  skills: string[];
+  resumeUrl?: string;
+  appliedPosition: string;
+  jobOpeningId?: string;
+  status: CandidateStatus;
+  gender?: CandidateGender;
+  expectedSalary?: number;
+  currentCompany?: string;
+  noticePeriod?: number;
+  notes?: string;
+  convertedUserId?: string;
+  offerSent?: boolean;
+  offerAccepted?: boolean;
+  onboardingComplete?: boolean;
+  createdAt: string;
+  jobOpening?: Pick<JobOpening, "id" | "title">;
+  interviews?: Interview[];
+}
+
+export interface Interview {
+  id: string;
+  candidateId: string;
+  scheduledAt: string;
+  type: string;
+  interviewers: string[];
+  status: InterviewStatus;
+  notes?: string;
+  candidate?: Pick<Candidate, "id" | "name" | "appliedPosition">;
+}
+
+export interface RecruitmentStats {
+  openPositions: number;
+  totalCandidates: number;
+  scheduledInterviews: number;
+  hired: number;
+  avgTimeToHire?: number;
+  offerAcceptanceRate?: number;
+  rejectionRate?: number;
+  avgExperience?: number;
+  maleCount?: number;
+  femaleCount?: number;
+  otherCount?: number;
+}
+
+// ─── Finance Types ───────────────────────────────────────────────────────────
+
+export type InvoiceStatus = 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled';
+export type PaymentStatus = 'pending' | 'received' | 'failed' | 'refunded';
+export type PaymentMethod = 'upi' | 'cash' | 'cheque' | 'bank_transfer' | 'card';
+export type ExpenseCategory = 'office' | 'rent' | 'electricity' | 'internet' | 'marketing' | 'travel' | 'software' | 'hardware' | 'salary' | 'equipment' | 'miscellaneous';
+export type ExpenseStatus = 'pending' | 'approved' | 'rejected' | 'paid';
+export type PayrollStatus = 'pending' | 'paid';
+export type BudgetStatus = 'active' | 'inactive' | 'completed';
+
+export interface FinanceClient {
+  id: string;
+  companyName: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  gstNumber?: string;
+  createdAt: string;
+}
+
+export interface InvoiceItem {
+  id?: string;
+  item: string;
+  description?: string;
+  qty: number;
+  price: number;
+  amount: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  clientId: string;
+  client?: FinanceClient;
+  project?: string;
+  subtotal: number;
+  discount: number;
+  tax: number;
+  grandTotal: number;
+  issueDate: string;
+  dueDate: string;
+  status: InvoiceStatus;
+  notes?: string;
+  items: InvoiceItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Payment {
+  id: string;
+  invoiceId?: string;
+  invoice?: Pick<Invoice, 'id' | 'invoiceNumber' | 'grandTotal'> & { client?: Pick<FinanceClient, 'id' | 'companyName'> };
+  amount: number;
+  paymentMethod: PaymentMethod;
+  referenceNumber?: string;
+  paymentDate: string;
+  status: PaymentStatus;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface Expense {
+  id: string;
+  title: string;
+  category: ExpenseCategory;
+  vendor?: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  receiptUrl?: string;
+  expenseDate: string;
+  status: ExpenseStatus;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface PayrollRecord {
+  id: string;
+  employeeId: string;
+  employee?: Pick<User, 'id' | 'name' | 'avatar' | 'department'> & { title?: string };
+  month: string;
+  basicSalary: number;
+  bonus: number;
+  allowances: number;
+  deductions: number;
+  netSalary: number;
+  paymentDate?: string;
+  status: PayrollStatus;
+  createdAt: string;
+}
+
+export interface Budget {
+  id: string;
+  department: string;
+  allocated: number;
+  used: number;
+  remaining: number;
+  startDate: string;
+  endDate: string;
+  status: BudgetStatus;
+  createdAt: string;
+}
+
+export interface FinanceDashboardData {
+  currentBalance: number;
+  revenue: number;
+  totalExpenses: number;
+  netProfit: number;
+  pendingInvoiceAmount: number;
+  pendingInvoiceCount: number;
+  monthlyPayroll: number;
+  activeBudgets: number;
+  recentInvoices: Invoice[];
+  recentPayments: Payment[];
+  recentExpenses: Expense[];
+  recentPayroll: PayrollRecord[];
+}
+
+export interface MonthlyAnalytics {
+  month: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+}
+
+export interface FinanceReportSummary {
+  revenue: { total: number; count: number };
+  expenses: { total: number; count: number };
+  payroll: { total: number; count: number };
+  profit: number;
+  budgets: Budget[];
+  monthly: MonthlyAnalytics[];
+}

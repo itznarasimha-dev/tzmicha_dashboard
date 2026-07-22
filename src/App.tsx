@@ -1,9 +1,9 @@
-import { RouterProvider } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "@/components/ui/Tooltip";
-import { router } from "@/routes";
-import { useEffect } from "react";
-import { useAppStore } from "@/store/appStore";
+import { RouterProvider } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TooltipProvider } from '@/components/ui/Tooltip';
+import { router } from '@/routes';
+import { useEffect } from 'react';
+import { useAppStore } from '@/store/appStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,17 +11,20 @@ const queryClient = new QueryClient({
   },
 });
 
-function ThemeInitializer() {
-  const { theme } = useAppStore();
+function AppInitializer() {
+  const { theme, isAuthenticated, loadMe } = useAppStore();
+
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else if (theme === "light") root.classList.remove("dark");
-    else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark);
-    }
+    if (theme === 'dark') root.classList.add('dark');
+    else if (theme === 'light') root.classList.remove('dark');
+    else root.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches);
   }, [theme]);
+
+  useEffect(() => {
+    if (isAuthenticated) loadMe();
+  }, []);
+
   return null;
 }
 
@@ -29,7 +32,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={300}>
-        <ThemeInitializer />
+        <AppInitializer />
         <RouterProvider router={router} />
       </TooltipProvider>
     </QueryClientProvider>
