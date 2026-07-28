@@ -28,3 +28,10 @@ export function authorize(...roles: UserRole[]) {
     next();
   };
 }
+
+/** Restricts a route to admin role only — enforced at API level. */
+export function authorizeAdminOnly(req: AuthRequest, _res: Response, next: NextFunction) {
+  if (!req.user) throw new AppError('Not authenticated', 401, 'UNAUTHORIZED');
+  if (req.user.role !== 'admin') throw new AppError('Admin access required', 403, 'FORBIDDEN');
+  next();
+}

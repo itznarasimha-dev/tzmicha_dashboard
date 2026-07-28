@@ -1,34 +1,34 @@
 import { PrismaClient } from '@prisma/client';
 
+function createPrismaClient() {
+  return new PrismaClient({
+    log: ['error'],
+    datasources: { db: { url: process.env.DATABASE_URL } },
+  });
+}
+
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-export const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: ['error'],
-});
-
+export const prisma = globalForPrisma.prisma || createPrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// Graceful shutdown (Prisma 5 compatible)
-process.on('beforeExit', async () => {
-  await prisma.$disconnect();
-});
+process.on('beforeExit', async () => { await prisma.$disconnect(); });
 
-export async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+const CONN_CODES = new Set(['P1001', 'P1002', 'P2024']);
+const CONN_MSGS  = ['ConnectionReset', 'connection pool', 'ECONNRESET', '10054', "Can't reach"];
+
+function isConnErr(err: any) {
+  return CONN_CODES.has(err?.code) ||
+    CONN_MSGS.some(m => err?.message?.includes(m));
+}
+
+export async function withRetry<T>(fn: () => Promise<T>, retries = 5): Promise<T> {
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
     } catch (err: any) {
-      const isConnErr =
-        err?.code === 'P1001' ||
-        err?.code === 'P1002' ||
-        err?.code === 'P2024' ||
-        err?.message?.includes('ConnectionReset') ||
-        err?.message?.includes('connection pool') ||
-        err?.message?.includes('ECONNRESET') ||
-        err?.message?.includes('10054');
-
-      if (isConnErr && i < retries - 1) {
-        await new Promise(r => setTimeout(r, 600 * (i + 1)));
+      if (isConnErr(err) && i < retries - 1) {
+        const delay = Math.min(1000 * 2 ** i, 8000); // exponential: 1s, 2s, 4s, 8s
+        await new Promise(r => setTimeout(r, delay));
         try { await prisma.$connect(); } catch {}
         continue;
       }

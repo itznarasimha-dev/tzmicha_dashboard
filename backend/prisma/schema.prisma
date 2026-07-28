@@ -78,6 +78,45 @@ enum BudgetStatus {
   completed
 }
 
+enum TaxType {
+  GST
+  TDS
+  income_tax
+  professional_tax
+  advance_tax
+  other
+}
+
+enum TaxStatus {
+  pending
+  filed
+  paid
+}
+
+enum InvestmentType {
+  fixed_deposit
+  mutual_fund
+  stocks
+  property
+  bonds
+  other
+}
+
+enum InvestmentStatus {
+  active
+  matured
+  withdrawn
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+  approve
+  reject
+  mark_paid
+}
+
 enum UserStatus {
   active
   inactive
@@ -842,5 +881,67 @@ model Budget {
   @@index([department])
   @@index([status])
   @@map("budgets")
+}
+
+model TaxRecord {
+  id             String    @id @default(cuid())
+  taxType        TaxType
+  period         String    // e.g. "2024-Q1", "2024-03"
+  taxableAmount  Float     @default(0)
+  taxRate        Float     @default(0)  // percentage
+  taxAmount      Float     @default(0)
+  dueDate        DateTime
+  filedDate      DateTime?
+  status         TaxStatus @default(pending)
+  notes          String?
+  createdById    String
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([taxType])
+  @@index([status])
+  @@index([dueDate])
+  @@map("tax_records")
+}
+
+model Investment {
+  id               String           @id @default(cuid())
+  investmentType   InvestmentType
+  institutionName  String
+  amountInvested   Float            @default(0)
+  currentValue     Float            @default(0)
+  returns          Float            @default(0)  // absolute return amount
+  startDate        DateTime
+  maturityDate     DateTime?
+  status           InvestmentStatus @default(active)
+  notes            String?
+  createdById      String
+  deletedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([investmentType])
+  @@index([status])
+  @@index([maturityDate])
+  @@map("investments")
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  userId       String
+  userEmail    String
+  roleAtAction String      // snapshot of role at time of action
+  action       AuditAction
+  resource     String      // e.g. "Budget", "TaxRecord", "Investment"
+  resourceId   String
+  changes      Json?       // before/after snapshot for updates
+  createdAt    DateTime    @default(now())
+
+  @@index([userId])
+  @@index([resource])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 

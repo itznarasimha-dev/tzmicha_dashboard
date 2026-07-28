@@ -25,7 +25,7 @@ async function main() {
     const hashed = await bcrypt.hash(u.password, 12);
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: {},
+      update: { password: hashed },
       create: {
         name: u.name,
         email: u.email,
@@ -416,6 +416,185 @@ async function main() {
     });
   }
   console.log('  Interviews seeded');
+
+  // ── Finance ────────────────────────────────────────────────────────────────
+
+  // Opening Balance
+  const ob = await prisma.financeOpeningBalance.findFirst();
+  if (!ob) {
+    await prisma.financeOpeningBalance.create({ data: { amount: 500000 } });
+  }
+
+  // Clients
+  const clientData = [
+    { id: 'seed-fc-1', companyName: 'Acme Corp',          contactPerson: 'Rajesh Nair',    email: 'rajesh@acmecorp.in',      phone: '+91 98765 11111', address: 'Mumbai, Maharashtra',   gstNumber: '27AABCU9603R1ZX' },
+    { id: 'seed-fc-2', companyName: 'TechStart Inc',      contactPerson: 'Preethi Menon',  email: 'preethi@techstart.io',    phone: '+91 98765 22222', address: 'Bangalore, Karnataka',  gstNumber: '29AADCT1234M1ZP' },
+    { id: 'seed-fc-3', companyName: 'GlobalRetail Ltd',   contactPerson: 'Sunil Kapoor',   email: 'sunil@globalretail.com',  phone: '+91 98765 33333', address: 'Delhi, NCR',            gstNumber: '07AABCG5678K1ZQ' },
+    { id: 'seed-fc-4', companyName: 'FinanceGroup',       contactPerson: 'Anita Desai',    email: 'anita@financegroup.in',   phone: '+91 98765 44444', address: 'Hyderabad, Telangana',  gstNumber: '36AABCF9012F1ZR' },
+    { id: 'seed-fc-5', companyName: 'SmallBiz Co',        contactPerson: 'Mohan Pillai',   email: 'mohan@smallbiz.co.in',    phone: '+91 98765 55555', address: 'Pune, Maharashtra',     gstNumber: '27AABCS3456S1ZS' },
+    { id: 'seed-fc-6', companyName: 'Nexus Solutions',    contactPerson: 'Deepa Krishnan', email: 'deepa@nexussolutions.in', phone: '+91 98765 66666', address: 'Chennai, Tamil Nadu',   gstNumber: '33AABCN7890N1ZT' },
+  ];
+  for (const c of clientData) {
+    await prisma.financeClient.upsert({ where: { id: c.id }, update: {}, create: c });
+  }
+
+  // Invoices + Items
+  const invoiceData = [
+    {
+      id: 'seed-inv-1', invoiceNumber: 'INV-2025-001', clientId: 'seed-fc-1', project: 'TZMicha Platform v2',
+      subtotal: 120000, discount: 5000, tax: 20700, grandTotal: 135700,
+      issueDate: '2025-01-05', dueDate: '2025-02-05', status: 'paid',
+      notes: 'Payment due within 30 days. Bank transfer preferred.',
+      items: [
+        { item: 'UI/UX Design',        description: 'Dashboard redesign — 40 hrs',  qty: 40, price: 1500, amount: 60000 },
+        { item: 'Frontend Development',description: 'React components — 40 hrs',    qty: 40, price: 1500, amount: 60000 },
+      ],
+    },
+    {
+      id: 'seed-inv-2', invoiceNumber: 'INV-2025-002', clientId: 'seed-fc-2', project: 'Mobile App',
+      subtotal: 85000, discount: 0, tax: 15300, grandTotal: 100300,
+      issueDate: '2025-01-15', dueDate: '2025-02-15', status: 'paid',
+      notes: 'Milestone 1 payment.',
+      items: [
+        { item: 'React Native Development', description: 'Auth + Onboarding screens', qty: 50, price: 1200, amount: 60000 },
+        { item: 'API Integration',          description: 'Backend API wiring',         qty: 25, price: 1000, amount: 25000 },
+      ],
+    },
+    {
+      id: 'seed-inv-3', invoiceNumber: 'INV-2025-003', clientId: 'seed-fc-3', project: 'Analytics Engine',
+      subtotal: 200000, discount: 10000, tax: 34200, grandTotal: 224200,
+      issueDate: '2025-02-01', dueDate: '2025-03-01', status: 'sent',
+      notes: 'Phase 1 delivery invoice.',
+      items: [
+        { item: 'Backend Architecture',  description: 'Data pipeline design',       qty: 60, price: 2000, amount: 120000 },
+        { item: 'Dashboard Development', description: 'Analytics widgets — 40 hrs', qty: 40, price: 2000, amount: 80000 },
+      ],
+    },
+    {
+      id: 'seed-inv-4', invoiceNumber: 'INV-2025-004', clientId: 'seed-fc-4', project: 'Custom Development',
+      subtotal: 350000, discount: 25000, tax: 58500, grandTotal: 383500,
+      issueDate: '2025-02-10', dueDate: '2025-03-10', status: 'viewed',
+      notes: 'Enterprise contract — Phase 1.',
+      items: [
+        { item: 'Full-Stack Development', description: 'Core platform build',       qty: 100, price: 2500, amount: 250000 },
+        { item: 'DevOps Setup',           description: 'CI/CD + cloud infra',       qty:  40, price: 2500, amount: 100000 },
+      ],
+    },
+    {
+      id: 'seed-inv-5', invoiceNumber: 'INV-2025-005', clientId: 'seed-fc-5', project: 'Starter Plan',
+      subtotal: 18000, discount: 0, tax: 3240, grandTotal: 21240,
+      issueDate: '2025-01-20', dueDate: '2025-02-20', status: 'overdue',
+      notes: 'Monthly retainer — January 2025.',
+      items: [
+        { item: 'Monthly Maintenance', description: 'Bug fixes + support', qty: 12, price: 1500, amount: 18000 },
+      ],
+    },
+    {
+      id: 'seed-inv-6', invoiceNumber: 'INV-2025-006', clientId: 'seed-fc-6', project: 'SEO & Marketing',
+      subtotal: 45000, discount: 2000, tax: 7740, grandTotal: 50740,
+      issueDate: '2025-03-01', dueDate: '2025-04-01', status: 'draft',
+      notes: 'Q1 digital marketing services.',
+      items: [
+        { item: 'SEO Audit',         description: 'Technical + content audit', qty:  1, price: 15000, amount: 15000 },
+        { item: 'Content Creation',  description: '10 blog posts',             qty: 10, price:  2000, amount: 20000 },
+        { item: 'Campaign Setup',    description: 'Google Ads setup',          qty:  1, price: 10000, amount: 10000 },
+      ],
+    },
+  ];
+  for (const inv of invoiceData) {
+    await prisma.invoice.upsert({
+      where: { id: inv.id },
+      update: {},
+      create: {
+        id: inv.id, invoiceNumber: inv.invoiceNumber, clientId: inv.clientId,
+        project: inv.project, subtotal: inv.subtotal, discount: inv.discount,
+        tax: inv.tax, grandTotal: inv.grandTotal,
+        issueDate: new Date(inv.issueDate), dueDate: new Date(inv.dueDate),
+        status: inv.status as any, notes: inv.notes,
+        createdById: createdUsers['finance'],
+        items: { create: inv.items },
+      },
+    });
+  }
+
+  // Payments
+  const paymentData = [
+    { id: 'seed-pay-1', invoiceId: 'seed-inv-1', amount: 135700, paymentMethod: 'bank_transfer', referenceNumber: 'TXN20250205001', paymentDate: '2025-02-04', status: 'received', notes: 'Full payment received' },
+    { id: 'seed-pay-2', invoiceId: 'seed-inv-2', amount: 100300, paymentMethod: 'upi',           referenceNumber: 'UPI20250214001', paymentDate: '2025-02-14', status: 'received', notes: 'UPI transfer confirmed' },
+    { id: 'seed-pay-3', invoiceId: 'seed-inv-5', amount: 21240, paymentMethod: 'bank_transfer',  referenceNumber: 'TXN20250220001', paymentDate: '2025-02-20', status: 'pending',  notes: 'Awaiting bank confirmation' },
+  ];
+  for (const p of paymentData) {
+    await prisma.payment.upsert({
+      where: { id: p.id },
+      update: {},
+      create: { id: p.id, invoiceId: p.invoiceId, amount: p.amount, paymentMethod: p.paymentMethod as any, referenceNumber: p.referenceNumber, paymentDate: new Date(p.paymentDate), status: p.status as any, notes: p.notes },
+    });
+  }
+
+  // Expenses
+  const expenseData = [
+    { id: 'seed-exp-1',  title: 'Office Rent — February',       category: 'rent',          vendor: 'Prestige Properties',   amount: 85000,  paymentMethod: 'bank_transfer', expenseDate: '2025-02-01', status: 'paid',     notes: 'Monthly office rent' },
+    { id: 'seed-exp-2',  title: 'AWS Cloud Services',           category: 'software',      vendor: 'Amazon Web Services',   amount: 32000,  paymentMethod: 'card',         expenseDate: '2025-02-03', status: 'paid',     notes: 'Monthly cloud bill' },
+    { id: 'seed-exp-3',  title: 'Team Lunch — Sprint Review',   category: 'miscellaneous', vendor: 'Mainland China',        amount: 8500,   paymentMethod: 'cash',         expenseDate: '2025-02-07', status: 'approved', notes: 'Sprint 11 retrospective lunch' },
+    { id: 'seed-exp-4',  title: 'Figma Pro — Annual',           category: 'software',      vendor: 'Figma Inc',             amount: 12000,  paymentMethod: 'card',         expenseDate: '2025-02-10', status: 'paid',     notes: 'Annual design tool subscription' },
+    { id: 'seed-exp-5',  title: 'Electricity Bill',             category: 'electricity',   vendor: 'MSEDCL',                amount: 14200,  paymentMethod: 'upi',          expenseDate: '2025-02-12', status: 'paid',     notes: 'February electricity' },
+    { id: 'seed-exp-6',  title: 'Internet — Jio Fiber',         category: 'internet',      vendor: 'Reliance Jio',          amount: 4500,   paymentMethod: 'upi',          expenseDate: '2025-02-15', status: 'paid',     notes: '1 Gbps business plan' },
+    { id: 'seed-exp-7',  title: 'Conference Travel — BangaloreTech', category: 'travel', vendor: 'MakeMyTrip',            amount: 28000,  paymentMethod: 'card',         expenseDate: '2025-02-18', status: 'approved', notes: 'Flights + hotel for 2 team members' },
+    { id: 'seed-exp-8',  title: 'New MacBook Pro — Dev',        category: 'hardware',      vendor: 'Apple India',           amount: 195000, paymentMethod: 'bank_transfer', expenseDate: '2025-02-20', status: 'approved', notes: 'Replacement for James Okafor' },
+    { id: 'seed-exp-9',  title: 'Google Workspace',             category: 'software',      vendor: 'Google LLC',            amount: 9600,   paymentMethod: 'card',         expenseDate: '2025-02-22', status: 'paid',     notes: 'Business Starter — 8 seats' },
+    { id: 'seed-exp-10', title: 'Office Supplies',              category: 'office',        vendor: 'Staples India',         amount: 6200,   paymentMethod: 'cash',         expenseDate: '2025-02-25', status: 'pending',  notes: 'Stationery and printer cartridges' },
+    { id: 'seed-exp-11', title: 'Office Rent — March',          category: 'rent',          vendor: 'Prestige Properties',   amount: 85000,  paymentMethod: 'bank_transfer', expenseDate: '2025-03-01', status: 'pending',  notes: 'Monthly office rent' },
+    { id: 'seed-exp-12', title: 'Marketing — Google Ads',       category: 'marketing',     vendor: 'Google LLC',            amount: 45000,  paymentMethod: 'card',         expenseDate: '2025-03-03', status: 'approved', notes: 'Q1 paid search budget' },
+  ];
+  for (const e of expenseData) {
+    await prisma.expense.upsert({
+      where: { id: e.id },
+      update: {},
+      create: { id: e.id, title: e.title, category: e.category as any, vendor: e.vendor, amount: e.amount, paymentMethod: e.paymentMethod as any, expenseDate: new Date(e.expenseDate), status: e.status as any, notes: e.notes, submittedById: createdUsers['finance'] },
+    });
+  }
+
+  // Payroll
+  const payrollData = [
+    { id: 'seed-pr-1',  employeeId: createdUsers['admin'],           month: '2025-02', basicSalary: 120000, bonus: 15000, allowances: 20000, deductions: 12000, netSalary: 143000, paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-2',  employeeId: createdUsers['frontend_dev'],    month: '2025-02', basicSalary: 95000,  bonus: 10000, allowances: 15000, deductions: 9500,  netSalary: 110500, paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-3',  employeeId: createdUsers['backend_dev'],     month: '2025-02', basicSalary: 100000, bonus: 12000, allowances: 15000, deductions: 10000, netSalary: 117000, paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-4',  employeeId: createdUsers['qa'],              month: '2025-02', basicSalary: 80000,  bonus: 5000,  allowances: 12000, deductions: 8000,  netSalary: 89000,  paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-5',  employeeId: createdUsers['marketing'],       month: '2025-02', basicSalary: 85000,  bonus: 8000,  allowances: 12000, deductions: 8500,  netSalary: 96500,  paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-6',  employeeId: createdUsers['hr'],              month: '2025-02', basicSalary: 75000,  bonus: 5000,  allowances: 10000, deductions: 7500,  netSalary: 82500,  paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-7',  employeeId: createdUsers['product_manager'], month: '2025-02', basicSalary: 110000, bonus: 15000, allowances: 18000, deductions: 11000, netSalary: 132000, paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-8',  employeeId: createdUsers['sales'],           month: '2025-02', basicSalary: 70000,  bonus: 20000, allowances: 10000, deductions: 7000,  netSalary: 93000,  paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-9',  employeeId: createdUsers['finance'],         month: '2025-02', basicSalary: 90000,  bonus: 8000,  allowances: 14000, deductions: 9000,  netSalary: 103000, paymentDate: '2025-02-28', status: 'paid' },
+    { id: 'seed-pr-10', employeeId: createdUsers['admin'],           month: '2025-03', basicSalary: 120000, bonus: 0,     allowances: 20000, deductions: 12000, netSalary: 128000, paymentDate: null,         status: 'pending' },
+    { id: 'seed-pr-11', employeeId: createdUsers['frontend_dev'],    month: '2025-03', basicSalary: 95000,  bonus: 0,     allowances: 15000, deductions: 9500,  netSalary: 100500, paymentDate: null,         status: 'pending' },
+    { id: 'seed-pr-12', employeeId: createdUsers['backend_dev'],     month: '2025-03', basicSalary: 100000, bonus: 0,     allowances: 15000, deductions: 10000, netSalary: 105000, paymentDate: null,         status: 'pending' },
+  ];
+  for (const pr of payrollData) {
+    await prisma.payroll.upsert({
+      where: { id: pr.id },
+      update: {},
+      create: { id: pr.id, employeeId: pr.employeeId, month: pr.month, basicSalary: pr.basicSalary, bonus: pr.bonus, allowances: pr.allowances, deductions: pr.deductions, netSalary: pr.netSalary, paymentDate: pr.paymentDate ? new Date(pr.paymentDate) : null, status: pr.status as any },
+    });
+  }
+
+  // Budgets
+  const budgetData = [
+    { id: 'seed-bud-1', department: 'Engineering',     allocated: 800000, used: 520000, remaining: 280000, startDate: '2025-01-01', endDate: '2025-03-31', status: 'active' },
+    { id: 'seed-bud-2', department: 'Marketing',       allocated: 300000, used: 185000, remaining: 115000, startDate: '2025-01-01', endDate: '2025-03-31', status: 'active' },
+    { id: 'seed-bud-3', department: 'Human Resources', allocated: 150000, used: 62000,  remaining: 88000,  startDate: '2025-01-01', endDate: '2025-03-31', status: 'active' },
+    { id: 'seed-bud-4', department: 'Operations',      allocated: 500000, used: 310000, remaining: 190000, startDate: '2025-01-01', endDate: '2025-03-31', status: 'active' },
+    { id: 'seed-bud-5', department: 'Sales',           allocated: 200000, used: 145000, remaining: 55000,  startDate: '2025-01-01', endDate: '2025-03-31', status: 'active' },
+    { id: 'seed-bud-6', department: 'Product',         allocated: 120000, used: 120000, remaining: 0,      startDate: '2025-01-01', endDate: '2025-03-31', status: 'completed' },
+  ];
+  for (const b of budgetData) {
+    await prisma.budget.upsert({
+      where: { id: b.id },
+      update: {},
+      create: { id: b.id, department: b.department, allocated: b.allocated, used: b.used, remaining: b.remaining, startDate: new Date(b.startDate), endDate: new Date(b.endDate), status: b.status as any },
+    });
+  }
+
+  console.log('  Finance data seeded (clients, invoices, payments, expenses, payroll, budgets)');
 
   console.log('\nSeed complete!');
   console.log('\nDemo login credentials:');

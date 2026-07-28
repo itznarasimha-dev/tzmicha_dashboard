@@ -11,12 +11,15 @@ export const getOpeningBalance = catchAsync(async (_req: AuthRequest, res: Respo
   ok(res, await svc.getOpeningBalance());
 });
 export const setOpeningBalance = catchAsync(async (req: AuthRequest, res: Response) => {
-  ok(res, await svc.setOpeningBalance(parseFloat(req.body.amount)));
+  const result = await svc.setOpeningBalance(parseFloat(req.body.amount));
+  await svc.audit(req.user!.id, req.user!.email, req.user!.role, 'update', 'OpeningBalance', result.id, { after: { amount: result.amount } });
+  ok(res, result);
 });
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-export const getDashboard = catchAsync(async (_req: AuthRequest, res: Response) => {
-  ok(res, await svc.getDashboardSummary());
+export const getDashboard = catchAsync(async (req: AuthRequest, res: Response) => {
+  const period = (req.query.period as string) || 'month';
+  ok(res, await svc.getDashboardSummary(period as any));
 });
 export const getMonthlyAnalytics = catchAsync(async (req: AuthRequest, res: Response) => {
   ok(res, await svc.getMonthlyAnalytics(parseInt(req.query.year as string) || new Date().getFullYear()));
@@ -63,6 +66,15 @@ export const duplicateInvoice = catchAsync(async (req: AuthRequest, res: Respons
 export const markInvoicePaid = catchAsync(async (req: AuthRequest, res: Response) => {
   ok(res, await svc.markInvoicePaid(req.params.id));
 });
+export const sendInvoice = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.sendInvoice(req.params.id));
+});
+export const bulkDeleteInvoices = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.bulkDeleteInvoices(req.body.ids));
+});
+export const bulkSendReminder = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.bulkSendReminder(req.body.ids));
+});
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 export const listPayments = catchAsync(async (req: AuthRequest, res: Response) => {
@@ -80,6 +92,9 @@ export const deletePayment = catchAsync(async (req: AuthRequest, res: Response) 
 });
 
 // ─── Expenses ─────────────────────────────────────────────────────────────────
+export const getExpenseStats = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.getExpenseStats(req.query));
+});
 export const listExpenses = catchAsync(async (req: AuthRequest, res: Response) => {
   ok(res, await svc.listExpenses(req.query));
 });
@@ -93,20 +108,32 @@ export const deleteExpense = catchAsync(async (req: AuthRequest, res: Response) 
   await svc.deleteExpense(req.params.id);
   res.status(204).send();
 });
+export const generateNextExpenseOccurrence = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.generateNextExpenseOccurrence(req.params.id), 201);
+});
+export const approveExpense = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.approveExpense(req.params.id, req.user!.id, req.user!.email, req.user!.role));
+});
+export const rejectExpense = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.rejectExpense(req.params.id, req.user!.id, req.user!.email, req.user!.role));
+});
 
 // ─── Payroll ──────────────────────────────────────────────────────────────────
 export const listPayroll = catchAsync(async (req: AuthRequest, res: Response) => {
   ok(res, await svc.listPayroll(req.query));
 });
 export const createPayroll = catchAsync(async (req: AuthRequest, res: Response) => {
-  ok(res, await svc.createPayroll(req.body), 201);
+  ok(res, await svc.createPayroll(req.body, req.user!.id, req.user!.email, req.user!.role), 201);
 });
 export const updatePayroll = catchAsync(async (req: AuthRequest, res: Response) => {
-  ok(res, await svc.updatePayroll(req.params.id, req.body));
+  ok(res, await svc.updatePayroll(req.params.id, req.body, req.user!.id, req.user!.email, req.user!.role));
 });
 export const deletePayroll = catchAsync(async (req: AuthRequest, res: Response) => {
   await svc.deletePayroll(req.params.id);
   res.status(204).send();
+});
+export const markPayrollPaid = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.markPayrollPaid(req.params.id, req.user!.id, req.user!.email, req.user!.role));
 });
 
 // ─── Budgets ──────────────────────────────────────────────────────────────────
@@ -114,14 +141,55 @@ export const listBudgets = catchAsync(async (req: AuthRequest, res: Response) =>
   ok(res, await svc.listBudgets(req.query));
 });
 export const createBudget = catchAsync(async (req: AuthRequest, res: Response) => {
-  ok(res, await svc.createBudget(req.body), 201);
+  ok(res, await svc.createBudget(req.body, req.user!.id, req.user!.email, req.user!.role), 201);
 });
 export const updateBudget = catchAsync(async (req: AuthRequest, res: Response) => {
-  ok(res, await svc.updateBudget(req.params.id, req.body));
+  ok(res, await svc.updateBudget(req.params.id, req.body, req.user!.id, req.user!.email, req.user!.role));
 });
 export const deleteBudget = catchAsync(async (req: AuthRequest, res: Response) => {
-  await svc.deleteBudget(req.params.id);
+  await svc.deleteBudget(req.params.id, req.user!.id, req.user!.email, req.user!.role);
   res.status(204).send();
+});
+
+// ─── Taxes ────────────────────────────────────────────────────────────────────
+export const listTaxes = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.listTaxes(req.query));
+});
+export const getTaxSummary = catchAsync(async (_req: AuthRequest, res: Response) => {
+  ok(res, await svc.getTaxSummary());
+});
+export const createTax = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.createTax(req.body, req.user!.id, req.user!.email, req.user!.role), 201);
+});
+export const updateTax = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.updateTax(req.params.id, req.body, req.user!.id, req.user!.email, req.user!.role));
+});
+export const deleteTax = catchAsync(async (req: AuthRequest, res: Response) => {
+  await svc.deleteTax(req.params.id, req.user!.id, req.user!.email, req.user!.role);
+  res.status(204).send();
+});
+
+// ─── Investments ──────────────────────────────────────────────────────────────
+export const listInvestments = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.listInvestments(req.query));
+});
+export const getInvestmentSummary = catchAsync(async (_req: AuthRequest, res: Response) => {
+  ok(res, await svc.getInvestmentSummary());
+});
+export const createInvestment = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.createInvestment(req.body, req.user!.id, req.user!.email, req.user!.role), 201);
+});
+export const updateInvestment = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.updateInvestment(req.params.id, req.body, req.user!.id, req.user!.email, req.user!.role));
+});
+export const deleteInvestment = catchAsync(async (req: AuthRequest, res: Response) => {
+  await svc.deleteInvestment(req.params.id, req.user!.id, req.user!.email, req.user!.role);
+  res.status(204).send();
+});
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+export const getAuditLog = catchAsync(async (req: AuthRequest, res: Response) => {
+  ok(res, await svc.getAuditLog(req.query));
 });
 
 // ─── Reports ──────────────────────────────────────────────────────────────────

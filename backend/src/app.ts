@@ -28,10 +28,10 @@ import { financeRouter } from './routes/finance.routes';
 import { prisma } from './config/prisma';
 import { markOverdueTasks, notifyUpcomingDeadlines } from './services/task.service';
 
-// Keep DB connection alive — ping every 4 minutes to prevent Supabase idle disconnect
+// Keep DB connection alive — ping every 90s to prevent Supabase idle disconnect
 setInterval(async () => {
   try { await prisma.$queryRaw`SELECT 1`; } catch {}
-}, 4 * 60 * 1000);
+}, 90 * 1000);
 
 const DEFAULT_HOLIDAYS = [
   // 2026
